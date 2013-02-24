@@ -8,7 +8,7 @@ The appindicator solves ubuntu's 12.10 problem where not exists option for eject
 ### *How to install:*
 
 * Download bdin.py
-* sudo cp -vi bdin.py /usr/local/bin
+* sudo cp -vi bdin.py /usr/local/bin/bdin
 * sudo chmod +x /usr/local/bin/bdin
 * Open gnome-session-properties and add a entry for bdin
  
