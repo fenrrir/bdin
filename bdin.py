@@ -151,6 +151,16 @@ class UdiskManager(object):
         return result
 
 
+def display_exception(method):
+    try:
+        method()
+    except (MountError, UmountError, DetachError), e:
+        dialog = gtk.MessageDialog(None, 0, gtk.MESSAGE_ERROR, 
+                                    gtk.BUTTONS_CLOSE, e.message)
+        dialog.set_title("Bdin")
+        response = dialog.run()
+        dialog.destroy()
+
 
 
 class AppIndicatorExample(object):
@@ -174,23 +184,24 @@ class AppIndicatorExample(object):
             item = gtk.MenuItem(name)
             item.show()
 
+            d_e = display_exception
 
             if not dev.is_mounted:
                 submenu = gtk.Menu()
                 mount_item = gtk.MenuItem("Mount")
                 mount_item.show()
-                mount_item.connect("activate", lambda i,d: d.mount(), dev)
+                mount_item.connect("activate", lambda i,d: d_e(d.mount), dev)
                 submenu.append(mount_item)
 
                 detach_item = gtk.MenuItem("Detach")
                 detach_item.show()
-                detach_item.connect("activate", lambda i,d: d.detach(), dev)
+                detach_item.connect("activate", lambda i,d: d_e(d.detach), dev)
                 submenu.append(detach_item)
             else:
                 submenu = gtk.Menu()
                 unmount_item = gtk.MenuItem("Unmount")
                 unmount_item.show()
-                unmount_item.connect("activate", lambda i,d : d.unmount(), dev)
+                unmount_item.connect("activate", lambda i,d : d_e(d.unmount), dev)
                 submenu.append(unmount_item)
 
             
