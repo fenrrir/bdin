@@ -163,11 +163,11 @@ def display_exception(method):
 
 
 
-class AppIndicatorExample(object):
+class App(object):
 
 
     def __init__(self):
-        self.ind = appindicator.Indicator("example-simple-client", 
+        self.ind = appindicator.Indicator("bdin",
                                           "indicator-messages", 
                                           appindicator.CATEGORY_APPLICATION_STATUS)
         self.ind.set_status(appindicator.STATUS_ACTIVE)
@@ -204,9 +204,19 @@ class AppIndicatorExample(object):
                 unmount_item.connect("activate", lambda i,d : d_e(d.unmount), dev)
                 submenu.append(unmount_item)
 
+
             
             item.set_submenu(submenu)
             self.menu.append(item)
+
+
+        about = gtk.ImageMenuItem("About")
+        img = gtk.Image()
+        img.set_from_stock(gtk.STOCK_ABOUT, gtk.ICON_SIZE_MENU)
+        about.set_image(img)
+        about.connect('activate', lambda i: self.show_about())
+        about.show()
+        self.menu.append(about)
 
 
         image = gtk.ImageMenuItem(gtk.STOCK_QUIT)
@@ -222,10 +232,24 @@ class AppIndicatorExample(object):
         gtk.main_quit()
 
 
+    def show_about(self):
+        self.about = gtk.AboutDialog()
+        self.about.set_name("Bdin")
+        self.about.set_version("0.1")
+        self.about.set_comments("A block device appindicator for ubuntu")
+        self.about.set_copyright("Copyright (C) 2013 Rodrigo Pinheiro Marques de Araujo")
+        self.about.set_authors(["Rodrigo Pinheiro Marques de Araujo <fenrrir@gmail.com>"])
+        self.about.set_license(LICENSE)
+        self.about.set_program_name("Bdin")
+        self.about.set_website("github.com/fenrrir/bdin")
+        self.about.run()
+        self.about.destroy()
+
+
 
 def main():
     DBusGMainLoop(set_as_default=True)
-    indicator = AppIndicatorExample()
+    app = App()
     gtk.main()
 
 
