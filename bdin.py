@@ -18,7 +18,7 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-LICENSE = """ Copyright (C) 2013 Rodrigo Pinheiro Marques de Araujo
+LICENSE = """ Copyright (C) 2014 Rodrigo Pinheiro Marques de Araujo
 
  This program is free software; you can redistribute it and/or modify it under
  the terms of the GNU General Public License as published by the Free Software
@@ -300,9 +300,9 @@ class App(object):
     def show_about(self):
         self.about = gtk.AboutDialog()
         self.about.set_name("Bdin")
-        self.about.set_version("0.1")
+        self.about.set_version("0.2")
         self.about.set_comments("A block device appindicator for ubuntu")
-        self.about.set_copyright("Copyright (C) 2013 Rodrigo Pinheiro Marques de Araujo")
+        self.about.set_copyright("Copyright (C) 2014 Rodrigo Pinheiro Marques de Araujo")
         self.about.set_authors(["Rodrigo Pinheiro Marques de Araujo <fenrrir@gmail.com>"])
         self.about.set_license(LICENSE)
         self.about.set_program_name("Bdin")
