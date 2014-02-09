@@ -55,7 +55,73 @@ class DetachError(BaseException):
     pass
 
 
-class Device(object):
+
+class GenericDevice(object):
+
+
+    @property
+    def is_internal(self):
+        return bool(self.props.Get("org.freedesktop.UDisks.Device", 
+                              'DeviceIsSystemInternal'))
+
+
+    @property
+    def is_partition(self):
+        return bool(self.props.Get("org.freedesktop.UDisks.Device", 
+                                   'DeviceIsPartition'))
+
+
+    @property
+    def file(self):
+        return self.props.Get("org.freedesktop.UDisks.Device", 
+                             'DeviceFile')
+
+
+
+class Device(GenericDevice):
+
+    def __init__(self, udisk_obj, manager):
+        self.obj = udisk_obj
+        self.manager = manager
+        self.props = dbus.Interface(self.obj, dbus.PROPERTIES_IFACE)
+
+
+    def __repr__(self):
+        return "Device({})".format(self.name)
+
+    @property
+    def name(self):
+        vendor = self.props.Get("org.freedesktop.UDisks.Device", 
+                              'DriveVendor')
+        model = self.props.Get("org.freedesktop.UDisks.Device", 
+                              'DriveModel')
+        return " ".join([vendor,model])
+
+
+       
+    @property
+    def is_removable(self):
+        return bool(self.props.Get("org.freedesktop.UDisks.Device", 
+                                   'DeviceIsRemovable'))
+
+    def list_partitions(self):
+        def condition(device):
+            return device.is_partition and device.file.startswith(self.file)
+        return [Partition(d.obj) for d in self.manager.list_devices(condition)]
+
+
+    def detach(self):
+        try:
+            for p in self.list_partitions():
+                p.unmount()
+            self.obj.DriveDetach('')
+        except dbus.DBusException, e:
+            raise DetachError(e)
+
+
+
+
+class Partition(GenericDevice):
 
     def __init__(self, udisk_obj):
         self.obj = udisk_obj
@@ -63,13 +129,9 @@ class Device(object):
 
 
     def __repr__(self):
-        return "Device(file={},label={})".format(self.device_file,
+        return "Device(file={},label={})".format(self.file,
                 self.name)
 
-    @property
-    def is_partition(self):
-        return bool(self.props.Get("org.freedesktop.UDisks.Device", 
-                                   'DeviceIsPartition'))
 
     @property
     def name(self):
@@ -77,21 +139,10 @@ class Device(object):
                               'idLabel')
 
     @property
-    def is_internal(self):
-        return bool(self.props.Get("org.freedesktop.UDisks.Device", 
-                              'DeviceIsSystemInternal'))
-
-    @property
     def is_mounted(self):
         return bool(self.props.Get("org.freedesktop.UDisks.Device", 
                               'DeviceIsMounted'))
 
-    @property
-    def device_file(self):
-        return self.props.Get("org.freedesktop.UDisks.Device", 
-                             'DeviceFile')
-
-        
     def mount(self):
         try:
             return unicode(self.obj.FilesystemMount('',''))
@@ -105,23 +156,12 @@ class Device(object):
             raise UmountError(e.message)
 
 
-    def detach(self):
-
-        slave = self.props.Get("org.freedesktop.UDisks.Device", 
-                               'PartitionSlave')
-        bus = dbus.SystemBus()
-        drive_device_obj = bus.get_object("org.freedesktop.UDisks", slave)
-        drive_device_dbus = dbus.Interface(drive_device_obj, "org.freedesktop.UDisks.Device")
-        try:
-            drive_device_dbus.DriveDetach('')
-        except dbus.DBusException, e:
-            raise DetachError(e)
 
 
 
 class UdiskManager(object):
     
-    def __init__(self, callback):
+    def __init__(self, callback=lambda *x: x):
         self.bus = dbus.SystemBus()
 
         self.proxy = self.bus.get_object("org.freedesktop.UDisks", 
@@ -137,13 +177,22 @@ class UdiskManager(object):
         self.iface.connect_to_signal('DeviceChanged', mycallback)
 
 
-    def list_devices(self):
+
+    def list_devices(self, filter_func=None):
+        if not filter_func:
+            def filter_func(device):
+                return not device.is_internal and not device.is_partition\
+                    and not device.is_removable
+        return self._list_devices(filter_func)
+
+    def _list_devices(self, filter_func):
         result = []
         for dev in self.iface.EnumerateDevices():
             device_obj = self.bus.get_object("org.freedesktop.UDisks", dev)
             device_dbus = dbus.Interface(device_obj, "org.freedesktop.UDisks.Device") 
-            device = Device(device_dbus)
-            if (not device.is_internal) and device.is_partition:
+            device = Device(device_dbus, self)
+
+            if filter_func(device):
                 result.append(device)
             else:
                 continue
