@@ -229,34 +229,50 @@ class App(object):
         self.menu = gtk.Menu()
 
         for dev in self.manager.list_devices():
-            name = "{} on {}".format(dev.name, dev.device_file)
+
+            name = dev.name
             item = gtk.MenuItem(name)
             item.show()
+            self.menu.append(item)
 
-            d_e = display_exception
 
-            if not dev.is_mounted:
-                submenu = gtk.Menu()
-                mount_item = gtk.MenuItem("Mount")
-                mount_item.show()
-                mount_item.connect("activate", lambda i,d: d_e(d.mount), dev)
-                submenu.append(mount_item)
+            dev_menu = gtk.Menu()
+            detach_item = gtk.MenuItem("Detach")
+            detach_item.show()
+            detach_item.connect("activate", lambda i,d: d_e(d.detach), dev)
+            dev_menu.append(detach_item)
+            item.set_submenu(dev_menu)
 
-                detach_item = gtk.MenuItem("Detach")
-                detach_item.show()
-                detach_item.connect("activate", lambda i,d: d_e(d.detach), dev)
-                submenu.append(detach_item)
-            else:
-                submenu = gtk.Menu()
-                unmount_item = gtk.MenuItem("Unmount")
-                unmount_item.show()
-                unmount_item.connect("activate", lambda i,d : d_e(d.unmount), dev)
-                submenu.append(unmount_item)
+
+
+            for partition in dev.list_partitions():
+                name = "{} on {}".format(partition.name, partition.file)
+                p_item = gtk.MenuItem(name)
+                p_item.show()
+
+                d_e = display_exception
+
+                if not partition.is_mounted:
+                    partition_menu = gtk.Menu()
+                    mount_item = gtk.MenuItem("Mount")
+                    mount_item.show()
+                    mount_item.connect("activate", lambda i,d: d_e(d.mount), dev)
+                    partition_menu.append(mount_item)
+
+                else:
+                    partition_menu = gtk.Menu()
+                    unmount_item = gtk.MenuItem("Unmount")
+                    unmount_item.show()
+                    unmount_item.connect("activate", lambda i,d : d_e(d.unmount), dev)
+                    partition_menu.append(unmount_item)
+
+
+                p_item.set_submenu(partition_menu)
+                dev_menu.append(p_item)
 
 
             
-            item.set_submenu(submenu)
-            self.menu.append(item)
+
 
 
         about = gtk.ImageMenuItem("About")
